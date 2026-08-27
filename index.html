@@ -15,14 +15,18 @@
 <script>
 (async()=>{
  try{
-  const files=['parts/01.txt','parts/02.txt','parts/03.txt','parts/04.txt','parts/05.txt','parts/06.txt','parts/06_1.txt'];
-  const chunks=await Promise.all(files.map(f=>fetch(f+'?v=015fix',{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(f+' '+r.status);return r.text()})));
-  const raw=atob(chunks.join('').replace(/\s+/g,''));
-  const bytes=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+  const r=await fetch('parts/01.txt?v=015fix2',{cache:'no-store'});
+  if(!r.ok) throw new Error('App package '+r.status);
+  const encoded=(await r.text()).replace(/\s+/g,'');
+  const raw=atob(encoded);
+  const bytes=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
   if(!('DecompressionStream' in window)) throw new Error('Please use a current version of Safari or Chrome.');
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   const html=await new Response(stream).text();
-  document.open(); document.write(html); document.close();
+  document.open();
+  document.write(html);
+  document.close();
  }catch(e){
   document.body.innerHTML='<div class="loading"><div><div class="mark">Baker Calculator</div><div class="sub">Could not load the prototype.<br><br>'+String(e.message||e)+'</div></div></div>';
  }

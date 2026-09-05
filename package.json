@@ -1,0 +1,1 @@
+{"name":"baker-calculator","version":"0.2.0","private":true,"type":"module","scripts":{"test":"node tests/run.mjs"},"devDependencies":{"fake-indexeddb":"6.2.5","jsdom":"30.0.1"}}

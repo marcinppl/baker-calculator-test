@@ -34,7 +34,25 @@ function renderConversion(){
 $('amount').oninput=()=>{syncFrom(false);renderConversion();};$('amount').onblur=()=>{syncFrom();renderConversion();};$('from-unit').onchange=()=>{syncFrom();renderConversion();};$('to-unit').onchange=renderConversion;
 $('swap').onclick=()=>{if(!state.conversion)return;const {result,from,to}=state.conversion;$('from-unit').value=to;$('to-unit').value=from;$('amount').value=to==='g'?String(Math.round(result)):decimal(result,12);syncFrom();renderConversion();if(to==='g'&&!Number.isInteger(result))toast('Swapped using the nearest whole gram.');};
 function renderIngredients(){const q=$('ingredient-search').value.trim().toLowerCase(),matches=INGREDIENTS.filter(i=>(i.name+' '+i.aliases).toLowerCase().includes(q));const list=$('ingredient-list');list.replaceChildren();if(!matches.length){const p=document.createElement('p');p.className='help';p.textContent='No ingredients found. Try another name, such as flour or sugar.';list.append(p);}for(const i of matches){const b=document.createElement('button');b.className='ingredient-item';b.setAttribute('aria-pressed',String(i.id===state.ingredient));const strong=document.createElement('strong'),small=document.createElement('small');strong.textContent=i.name;small.textContent=i.aliases||i.reference;b.append(strong,small);b.onclick=()=>{state.ingredient=i.id;$('ingredient-dialog').close();renderConversion();};list.append(b);}}
-$('ingredient-btn').onclick=()=>{$('ingredient-search').value='';renderIngredients();showDialog('ingredient-dialog');};$('ingredient-search').oninput=renderIngredients;
+// Keep the picker inside the visible screen, including when iOS opens its keyboard.
+function fitIngredientPicker(){
+ const picker=$('ingredient-dialog'),viewport=window.visualViewport;
+ const visibleHeight=viewport?.height||window.innerHeight,offset=viewport?.offsetTop||0;
+ const height=Math.min(720,Math.max(0,visibleHeight-16));
+ picker.style.setProperty('--picker-height',`${height}px`);
+ picker.style.setProperty('--picker-top',`${offset+visibleHeight-height-8}px`);
+}
+function updateOpenPicker(){if($('ingredient-dialog').open)fitIngredientPicker();}
+window.visualViewport?.addEventListener('resize',updateOpenPicker);
+window.visualViewport?.addEventListener('scroll',updateOpenPicker);
+window.addEventListener('resize',updateOpenPicker);
+$('ingredient-btn').onclick=()=>{
+ $('ingredient-search').value='';renderIngredients();fitIngredientPicker();showDialog('ingredient-dialog');
+ // Focus a non-editable control so browsing never summons the software keyboard.
+ $('ingredient-dialog').querySelector('[data-close]').focus({preventScroll:true});
+ $('ingredient-list').scrollTop=0;
+};
+$('ingredient-search').oninput=()=>{renderIngredients();$('ingredient-list').scrollTop=0;};
 function references(single=false){
  $('reference-title').textContent=single?ingredient(state.ingredient).name:'Our measures';const body=$('reference-body');body.replaceChildren();
  if(!single){body.innerHTML='<p>Grams are entered and displayed as whole numbers. Kilograms, cups and other units retain useful decimal precision.</p><p>We use a US customary cup (236.588 mL), US tablespoons and teaspoons, plus separate metric measures: 250 mL cups, 15 mL tablespoons and 5 mL teaspoons. Australian 20 mL tablespoons are not included.</p><p>Ingredient weights are kitchen references, not exact densities for every brand. Spoon and level flour, pack brown sugar, and use level measuring spoons. Prefer the gram weights in your recipe.</p><p><a href="https://www.nist.gov/pml/owm/metric-si/metric-kitchen" target="_blank" rel="noopener noreferrer">NIST measurement guidance</a></p>';}

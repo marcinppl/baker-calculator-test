@@ -35,10 +35,22 @@ let saved=await storage.getRecipes();test('Migrated notes and photo bytes surviv
 await storage.deleteRecipe(saved[0].id);await storage.migrate(ingredient);saved=await storage.getRecipes();test('Deleted migrated recipes do not reappear',()=>assert.equal(saved.length,1));
 const bad=[{format:'wrong',version:1,recipes:[]},{format:'baker-calculator-recipes',version:1,recipes:[{id:'x',name:'',notes:''}]}];test('Invalid backups rejected before writes',()=>bad.forEach(x=>assert.throws(()=>storage.validateBackup(x))));
 const backup=storage.validateBackup({format:'baker-calculator-recipes',version:1,recipes:[{id:'x',name:'Restore test',notes:'A\nB',photo:'data:image/png;base64,AQID'}]});await storage.importRecipes(backup);saved=await storage.getRecipes();test('Backup restores notes and photos without overwriting',()=>{assert.equal(saved.length,2);assert.equal(saved.find(r=>r.name==='Restore test').photo.size,3);});
+const viewport=new w.EventTarget();viewport.height=800;viewport.offsetTop=0;Object.defineProperty(w,'visualViewport',{value:viewport,configurable:true});
 await import('../app.mjs');
 const $=id=>document.getElementById(id);const input=(id,value,type='input')=>{$(id).value=value;$(id).dispatchEvent(new w.Event(type,{bubbles:true}));};
 await new Promise(r=>setTimeout(r,30));
 test('Whole-gram paste is normalised; kg keeps 0.001',()=>{input('amount','123.45');assert.equal($('result').textContent,'—');$('amount').dispatchEvent(new w.Event('blur'));assert.equal($('amount').value,'123');input('amount','1');input('to-unit','kg','change');assert.equal($('result').textContent,'0.001');input('amount','');assert.equal($('result').textContent,'—');assert.equal($('convert-error').hidden,false);input('amount','-10');assert.equal($('result').textContent,'—');input('amount','100');});
+test('Ingredient picker avoids keyboard autofocus and fits the visible screen',()=>{
+ $('ingredient-btn').click();
+ assert.equal($('ingredient-search').hasAttribute('autofocus'),false);
+ assert.equal(document.activeElement,$('ingredient-dialog').querySelector('[data-close]'));
+ const fits=()=>{const sheet=$('ingredient-dialog');const top=parseFloat(sheet.style.getPropertyValue('--picker-top')),height=parseFloat(sheet.style.getPropertyValue('--picker-height'));assert.ok(top>=viewport.offsetTop);assert.ok(top+height<=viewport.offsetTop+viewport.height-8);};
+ fits();viewport.height=340;viewport.offsetTop=70;viewport.dispatchEvent(new w.Event('resize'));fits();
+ viewport.offsetTop=110;viewport.dispatchEvent(new w.Event('scroll'));fits();
+ viewport.height=800;viewport.offsetTop=0;viewport.dispatchEvent(new w.Event('resize'));fits();
+ $('ingredient-list').querySelector('button:last-child').click();assert.equal($('ingredient-dialog').open,false);
+ $('ingredient-dialog').close();
+});
 test('Ingredient alias search and empty feedback',()=>{$('ingredient-btn').click();input('ingredient-search','powdered');assert.equal($('ingredient-list').querySelectorAll('button').length,1);assert.match($('ingredient-list').textContent,/Icing sugar/);input('ingredient-search','notpresent');assert.match($('ingredient-list').textContent,/No ingredients/);$('ingredient-dialog').close();});
 test('Hydration interface calculates and rejects impossible targets',()=>{document.querySelector('[data-tool=hydration]').click();assert.match($('h-result').textContent,/700 g/);$('sourdough').checked=true;$('sourdough').dispatchEvent(new w.Event('change'));input('h-starter','200');assert.match($('h-result').textContent,/600 g/);input('h-starter','10000');assert.equal($('h-result').hidden,true);assert.match($('h-error').textContent,/more flour or water/);$('analyse-mode').click();assert.match($('h-result').textContent,/72.73%/);});
 test('Pan, scale and oven interfaces work',()=>{$('back-tools').click();document.querySelector('[data-tool=pan]').click();assert.match($('pan-result').textContent,/1.3061/);input('pan-from-a','0');assert.equal($('pan-result').hidden,true);input('pan-from-a','7');$('pan-to-scale').click();assert.match(document.querySelector('.scale-output').textContent,/327 g/);input('scale-factor','0');assert.equal($('scale-error').hidden,false);$('back-tools').click();document.querySelector('[data-tool=oven]').click();assert.match($('oven-result').textContent,/356°F/);});

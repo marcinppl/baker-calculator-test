@@ -11,14 +11,15 @@
 <style>html,body{margin:0;min-height:100%;background:#fbf5eb;color:#2a201a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.loading{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px;box-sizing:border-box}.mark{font-family:Georgia,serif;font-size:34px;font-weight:700;color:#b5522c}.sub{margin-top:10px;color:#76685d;line-height:1.5}.dot{display:inline-block;animation:p 1s infinite alternate}@keyframes p{to{opacity:.25}}</style>
 </head>
 <body>
-<div class="loading"><div><div class="mark">Baker Calculator</div><div class="sub">Loading v0.1.8 Warm Bakery <span class="dot">•••</span></div></div></div>
+<div class="loading"><div><div class="mark">Baker Calculator</div><div class="sub">Loading v0.1.8.2 Warm Bakery <span class="dot">•••</span></div></div></div>
 <script>
 (async()=>{
  try{
+  const BUILD='0182';
   const files=['v016/01.txt','v016/02.txt','v016/03.txt','v016/04.txt','v016/05.txt','v016/06.txt','v016/07.txt','v016/08.txt','v016/09.txt'];
   const chunks=[];
   for(const file of files){
-   const r=await fetch(file+'?build=018',{cache:'no-store'});
+   const r=await fetch(file+'?build='+BUILD,{cache:'no-store'});
    if(!r.ok) throw new Error('Could not load '+file+' ('+r.status+')');
    chunks.push((await r.text()).trim());
   }
@@ -32,11 +33,11 @@
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   let html=await new Response(stream).text();
   if(!html.includes('<title>Baker Calculator</title>')) throw new Error('Decoded app failed validation');
-  html=html.replace('</head>','<link rel="stylesheet" href="./v018.css?build=018"></head>');
-  html=html.replace('</body>','<script src="./v017.js?build=018"></'+'script><script src="./v018.js?build=018"></'+'script></body>');
+  html=html.replace('</head>','<link rel="stylesheet" href="./v018.css?build='+BUILD+'"></head>');
+  html=html.replace('</body>','<script src="./v017.js?build='+BUILD+'"></'+'script><script src="./v018.js?build='+BUILD+'"></'+'script></body>');
   document.open();document.write(html);document.close();
  }catch(e){
-  document.body.innerHTML='<div class="loading"><div><div class="mark">Baker Calculator</div><div class="sub">Could not load v0.1.8.<br><br>'+String(e.message||e)+'<br><br>Please refresh once.</div></div></div>';
+  document.body.innerHTML='<div class="loading"><div><div class="mark">Baker Calculator</div><div class="sub">Could not load v0.1.8.2.<br><br>'+String(e.message||e)+'<br><br>Please refresh once.</div></div></div>';
  }
 })();
 </script>
